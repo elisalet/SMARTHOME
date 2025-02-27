@@ -1,0 +1,96 @@
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+
+void main() {
+  runApp(SmartHomeApp());
+}
+
+class SmartHomeApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Smart Home',
+      theme: ThemeData(primarySwatch: Colors.blue),
+      home: HomeScreen(),
+    );
+  }
+}
+
+class HomeScreen extends StatefulWidget {
+  @override
+  _HomeScreenState createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  bool doorLocked = true;
+  bool lightsOn = false;
+  bool motionDetected = false;
+
+  final String apiUrl = "http://your-api-endpoint"; // Remplacez par votre URL API
+
+  Future<void> toggleDoorLock() async {
+    final response = await http.post(Uri.parse('$apiUrl/lock'),
+      body: jsonEncode({'status': !doorLocked}),
+      headers: {'Content-Type': 'application/json'},
+    );
+    if (response.statusCode == 200) {
+      setState(() {
+        doorLocked = !doorLocked;
+      });
+    }
+  }
+
+  Future<void> toggleLights() async {
+    final response = await http.post(Uri.parse('$apiUrl/lights'),
+      body: jsonEncode({'status': !lightsOn}),
+      headers: {'Content-Type': 'application/json'},
+    );
+    if (response.statusCode == 200) {
+      setState(() {
+        lightsOn = !lightsOn;
+      });
+    }
+  }
+
+  Future<void> getMotionStatus() async {
+    final response = await http.get(Uri.parse('$apiUrl/motion'));
+    if (response.statusCode == 200) {
+      setState(() {
+        motionDetected = jsonDecode(response.body)['status'];
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text('Smart Home Control')),
+      body: Padding(
+        padding: EdgeInsets.all(16.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SwitchListTile(
+              title: Text('Door Lock'),
+              value: doorLocked,
+              onChanged: (value) => toggleDoorLock(),
+            ),
+            SwitchListTile(
+              title: Text('Lights'),
+              value: lightsOn,
+              onChanged: (value) => toggleLights(),
+            ),
+            ListTile(
+              title: Text('Motion Detected: ${motionDetected ? "Yes" : "No"}'),
+              trailing: ElevatedButton(
+                onPressed: getMotionStatus,
+                child: Text('Refresh'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
